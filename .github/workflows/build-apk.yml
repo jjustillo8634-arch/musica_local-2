@@ -1,0 +1,42 @@
+name: Compilar APK Flutter
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener codigo fuente
+        uses: actions/checkout@v4
+      - name: Configurar Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+      - name: Configurar Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.x'
+          channel: stable
+          cache: true
+      - name: Crear estructura Android si falta
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --org com.jus musica_local_tmp
+            cp -R musica_local_tmp/android ./android
+            rm -rf musica_local_tmp
+          fi
+      - name: Obtener dependencias
+        run: flutter pub get
+      - name: Analizar codigo
+        run: flutter analyze
+      - name: Compilar APK
+        run: flutter build apk --release
+      - name: Guardar APK generado
+        uses: actions/upload-artifact@v4
+        with:
+          name: reproductor-musica-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
